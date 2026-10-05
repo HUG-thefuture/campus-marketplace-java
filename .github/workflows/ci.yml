@@ -1,0 +1,15 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: marketplace tests
+        run: mvn -q -f marketplace/pom.xml test
+      - name: shortlink tests
+        run: mvn -q -f shortlink/pom.xml test

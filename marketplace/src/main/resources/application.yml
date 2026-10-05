@@ -1,0 +1,55 @@
+server:
+  port: 8080                       # 应用端口
+
+spring:
+  application:
+    name: marketplace               # 服务名
+
+  # 数据源配置（连接本地 MySQL 的 marketplace 库）
+  datasource:
+    url: jdbc:mysql://localhost:3306/marketplace?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: "${SPRING_DATASOURCE_USERNAME:root}"
+    # root/root 仅为本机演示默认值：可用环境变量 SPRING_DATASOURCE_PASSWORD 覆盖；
+    # 任何真实部署都必须通过环境变量注入，不得依赖该默认值
+    password: "${SPRING_DATASOURCE_PASSWORD:root}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # SQL 初始化：首次启动自动执行 schema.sql 建表、data.sql 灌入示例数据
+  # 注意：always 会每次启动都执行，若表已存在请改为 never；开发期用 always 方便演示
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      encoding: UTF-8
+
+# MyBatis 配置：扫描 mapper XML 与类型别名
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.resume.marketplace.entity
+  configuration:
+    map-underscore-to-camel-case: true   # 数据库下划线字段自动映射到 Java 驼峰属性
+    # SQL 日志走 SLF4J 而不是 StdOutImpl：StdOutImpl 会把 SQL 参数（含 BCrypt 哈希）
+    # 绕过日志框架直接打进 stdout，无法关闭也不脱敏
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# 开发期保持 SQL 可见（等价于原来 StdOutImpl 的效果，但受日志框架统一管理）
+logging:
+  level:
+    com.resume.marketplace.mapper: debug
+
+# 自定义业务配置
+jwt:
+  # 2026-09 安全修复：仓库不再存放默认密钥。未设置 JWT_SECRET 时启动随机生成
+  # （重启后旧 token 失效）；生产环境必须通过环境变量注入固定密钥。
+  secret: "${JWT_SECRET:}"
+  # Token 有效期（毫秒）：7 天 = 7 * 24 * 60 * 60 * 1000
+  expire: 604800000
+  header: Authorization            # 请求头字段名
+  prefix: "Bearer "                # 请求头前缀
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html         # 接口调试页面地址
+  api-docs:
+    path: /v3/api-docs

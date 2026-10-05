@@ -1,0 +1,32 @@
+# 一键启动 MySQL 8，并自动初始化两个项目各自的数据库
+# 用法：在本目录执行 `docker compose up -d`
+# 注意：schema.sql / data.sql 由各自项目内的 init 挂载，这里只负责建库并引入初始化脚本
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: resume-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root                  # 与两个项目 application.yml 中的密码保持一致（本机 MySQL 8.4 亦为 root/root）
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"                              # 对外暴露，供本机应用直连
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    volumes:
+      - mysql-data:/var/lib/mysql                # 数据持久化
+      # 挂载初始化脚本：MySQL 首次启动会按文件名顺序执行（两个项目共用一份初始化）
+      - ./00-init-databases.sql:/docker-entrypoint-initdb.d/00-init-databases.sql:ro
+      - ./marketplace/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-marketplace-schema.sql:ro
+      - ./marketplace/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-marketplace-data.sql:ro
+      - ./shortlink/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/03-shortlink-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql-data:

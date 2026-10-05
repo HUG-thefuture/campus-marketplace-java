@@ -1,0 +1,26 @@
+server:
+  port: 8081                       # 与 marketplace 错开端口，可同时启动
+
+spring:
+  application:
+    name: shortlink
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/shortlink?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}   # 默认仅本机演示；环境变量可覆盖（与 marketplace 同约定）
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+# 短链接业务配置
+shortlink:
+  # 短码长度（Base62 编码后的位数）
+  code-length: 6
+  # 默认短链有效期（毫秒），30 天 = 30 * 24 * 60 * 60 * 1000
+  default-expire-ms: 2592000000
+  # 访问域名前缀（用于拼接完整短链返回给前端，生产改真实域名）
+  domain: "http://localhost:8081"

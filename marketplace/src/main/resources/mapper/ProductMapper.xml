@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.resume.marketplace.mapper.ProductMapper">
+
+    <!-- 通用字段 -->
+    <sql id="BaseColumns">
+        id, title, description, category, price, images, status, seller_id, created_at, updated_at
+    </sql>
+
+    <resultMap id="ProductResultMap" type="com.resume.marketplace.entity.Product">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="category" column="category"/>
+        <result property="price" column="price"/>
+        <result property="images" column="images"/>
+        <result property="status" column="status"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.resume.marketplace.entity.Product"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product (title, description, category, price, images, status, seller_id)
+        VALUES (#{title}, #{description}, #{category}, #{price}, #{images}, #{status}, #{sellerId})
+    </insert>
+
+    <select id="findById" resultMap="ProductResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM product
+        WHERE id = #{id}
+    </select>
+
+    <!-- 动态更新：只更新非空字段，下架/改信息由其复用 -->
+    <update id="update" parameterType="com.resume.marketplace.entity.Product">
+        UPDATE product
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="images != null">images = #{images},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分页检索：keyword 与 category 都可选；<where> 自动处理多余的 AND -->
+    <select id="search" resultMap="ProductResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM product
+        <where>
+            <if test="status != null and status != ''">
+                status = #{status}
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM product
+        <where>
+            <if test="status != null and status != ''">
+                status = #{status}
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findBySeller" resultMap="ProductResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM product
+        WHERE seller_id = #{sellerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 原子售罄：WHERE 带上旧状态作乐观锁条件，并发下单只有一行能更新成功 -->
+    <update id="markSoldIfOnSale">
+        UPDATE product SET status = 'SOLD' WHERE id = #{id} AND status = 'ON_SALE'
+    </update>
+
+    <!-- 订单取消后回补在售状态 -->
+    <update id="restoreOnSaleIfSold">
+        UPDATE product SET status = 'ON_SALE' WHERE id = #{id} AND status = 'SOLD'
+    </update>
+
+    <!-- 原子下架：与 markSoldIfOnSale 对称的乐观锁条件更新，防止把并发下单后的 SOLD 覆盖成 OFF_SHELF -->
+    <update id="offShelfIfOnSale">
+        UPDATE product SET status = 'OFF_SHELF' WHERE id = #{id} AND status = 'ON_SALE'
+    </update>
+
+</mapper>

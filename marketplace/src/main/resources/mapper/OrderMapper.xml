@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.resume.marketplace.mapper.OrderMapper">
+
+    <resultMap id="OrderResultMap" type="com.resume.marketplace.entity.Order">
+        <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="productId" column="product_id"/>
+        <result property="buyerId" column="buyer_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="amount" column="amount"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.resume.marketplace.entity.Order"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (order_no, product_id, buyer_id, seller_id, amount, status)
+        VALUES (#{orderNo}, #{productId}, #{buyerId}, #{sellerId}, #{amount}, #{status})
+    </insert>
+
+    <select id="findById" resultMap="OrderResultMap">
+        SELECT id, order_no, product_id, buyer_id, seller_id, amount, status, created_at, updated_at
+        FROM orders
+        WHERE id = #{id}
+    </select>
+
+    <!-- 乐观条件更新：仅当当前状态等于 expectedFrom 时才改。
+         返回 0 说明状态已被并发修改，Service 据此抛错，避免非法/脏流转。 -->
+    <update id="updateStatus">
+        UPDATE orders
+        SET status = #{to}
+        WHERE id = #{id} AND status = #{expectedFrom}
+    </update>
+
+    <select id="findByBuyer" resultMap="OrderResultMap">
+        SELECT id, order_no, product_id, buyer_id, seller_id, amount, status, created_at, updated_at
+        FROM orders
+        WHERE buyer_id = #{buyerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findBySeller" resultMap="OrderResultMap">
+        SELECT id, order_no, product_id, buyer_id, seller_id, amount, status, created_at, updated_at
+        FROM orders
+        WHERE seller_id = #{sellerId}
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

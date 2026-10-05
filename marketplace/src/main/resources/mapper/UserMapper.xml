@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.resume.marketplace.mapper.UserMapper">
+
+    <!-- 查询结果映射：显式指定列到属性，保证驼峰/字段一一对应 -->
+    <resultMap id="UserResultMap" type="com.resume.marketplace.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="nickname" column="nickname"/>
+        <result property="phone" column="phone"/>
+        <result property="role" column="role"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByUsername" resultMap="UserResultMap">
+        SELECT id, username, password, nickname, phone, role, created_at, updated_at
+        FROM `user`
+        WHERE username = #{username}
+    </select>
+
+    <select id="findById" resultMap="UserResultMap">
+        SELECT id, username, password, nickname, phone, role, created_at, updated_at
+        FROM `user`
+        WHERE id = #{id}
+    </select>
+
+    <!-- useGeneratedKeys 让 MyBatis 把自增主键回填到实体对象 -->
+    <insert id="insert" parameterType="com.resume.marketplace.entity.User"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `user` (username, password, nickname, phone, role)
+        VALUES (#{username}, #{password}, #{nickname}, #{phone}, #{role})
+    </insert>
+
+</mapper>
